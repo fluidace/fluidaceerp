@@ -1,12 +1,13 @@
-import React from 'react';
+import { useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell
+  PieChart, Pie, Cell
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, Users,
-  AlertTriangle, Bell, Download, Calendar, Filter
+  DollarSign, ShoppingCart, Package, Users,
+  AlertTriangle, Bell, Home, Filter, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
+import * as Tabs from '@radix-ui/react-tabs';
 
 const salesData = [
   { name: 'Jan', receitas: 40000, despesas: 24000 },
@@ -24,7 +25,7 @@ const expenseDistribution = [
   { name: 'Outros', value: 10 },
 ];
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
 const recentTransactions = [
   { id: 1, description: 'Venda #1234', value: 'R$ 1.500,00', status: 'Recebido', date: '2024-03-20' },
@@ -47,198 +48,281 @@ const lowStockProducts = [
 ];
 
 const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showFilters, setShowFilters] = useState(false);
+
   return (
-    <div className="bg-gray-50 text-gray-900">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="flex gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-              <Download size={20} /> Exportar
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-              <Filter size={20} /> Filtros
-            </button>
-          </div>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Saldo em Caixa</p>
-                <h3 className="text-2xl font-bold">R$ 125.400</h3>
-                <p className="text-sm text-green-500 flex items-center mt-2">
-                  <TrendingUp size={16} className="mr-1" /> +12.5%
-                </p>
+    <div className="min-h-screen bg-gray-50 text-gray-900 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
+      {/* Header Fixo */}
+      <header className="sticky top-0 z-10 backdrop-blur-sm bg-opacity-90">
+        <div className="max-w-[1600px] mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-blue-100 rounded-xl">
+                <Home size={24} className="text-blue-600" />
               </div>
-              <DollarSign size={40} className="text-blue-500" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Vendas do Mês</p>
-                <h3 className="text-2xl font-bold">R$ 84.300</h3>
-                <p className="text-sm text-red-500 flex items-center mt-2">
-                  <TrendingDown size={16} className="mr-1" /> -3.2%
-                </p>
+                <h1 className="text-2xl font-bold">Dashboard</h1>
+                <p className="text-sm text-gray-500">Visão geral do seu negócio</p>
               </div>
-              <ShoppingCart size={40} className="text-blue-500" />
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Produtos em Estoque</p>
-                <h3 className="text-2xl font-bold">1.234</h3>
-                <p className="text-sm text-yellow-500 flex items-center mt-2">
-                  <AlertTriangle size={16} className="mr-1" /> 5 alertas
-                </p>
-              </div>
-              <Package size={40} className="text-blue-500" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Clientes Ativos</p>
-                <h3 className="text-2xl font-bold">892</h3>
-                <p className="text-sm text-green-500 flex items-center mt-2">
-                  <TrendingUp size={16} className="mr-1" /> +8.1%
-                </p>
-              </div>
-              <Users size={40} className="text-blue-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-semibold mb-4">Receitas vs Despesas</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="receitas" fill="#10B981" />
-                  <Bar dataKey="despesas" fill="#EF4444" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-semibold mb-4">Distribuição de Despesas</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expenseDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {expenseDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Transactions and Activities */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-semibold mb-4">Últimas Transações</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2">Descrição</th>
-                    <th className="text-left py-2">Valor</th>
-                    <th className="text-left py-2">Status</th>
-                    <th className="text-left py-2">Data</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="border-b">
-                      <td className="py-2">{transaction.description}</td>
-                      <td className="py-2">{transaction.value}</td>
-                      <td className="py-2">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            transaction.status === 'Recebido'
-                              ? 'bg-green-100 text-green-800'
-                              : transaction.status === 'Pendente'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {transaction.status}
-                        </span>
-                      </td>
-                      <td className="py-2">{transaction.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-semibold mb-4">Atividades Recentes</h3>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4">
-                  <div className="rounded-full bg-blue-100 p-2">
-                    <Bell size={16} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm">{activity.message}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Low Stock Alert */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <h3 className="text-xl font-semibold mb-4">Alertas de Estoque Baixo</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {lowStockProducts.map((product) => (
-              <div
-                key={product.id}
-                className="border border-red-200 rounded-lg p-4 bg-red-50"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <h4 className="font-semibold text-red-700">{product.name}</h4>
-                <p className="text-sm text-red-600">
-                  Estoque atual: {product.current} (Mínimo: {product.min})
-                </p>
-              </div>
-            ))}
+                <Filter size={20} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
+
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
+        {/* Tabs */}
+        <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+          <Tabs.List className="flex gap-1 p-1 mb-6 w-fit bg-gray-100 rounded-lg">
+            <Tabs.Trigger
+              value="overview"
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'overview'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Visão Geral
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="activities"
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'activities'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Atividades
+            </Tabs.Trigger>
+          </Tabs.List>
+
+          {/* Conteúdo das Tabs */}
+          <Tabs.Content value="overview" className="space-y-6">
+            {/* Cards de Métricas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Saldo em Caixa</span>
+                  <span className="p-2 bg-blue-100 rounded-lg">
+                    <DollarSign size={20} className="text-blue-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">R$ 125.400</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight size={16} className="text-green-500" />
+                  <span className="text-green-500 font-medium">12.5%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Vendas do Mês</span>
+                  <span className="p-2 bg-green-100 rounded-lg">
+                    <ShoppingCart size={20} className="text-green-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">R$ 84.300</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowDownRight size={16} className="text-red-500" />
+                  <span className="text-red-500 font-medium">3.2%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Produtos em Estoque</span>
+                  <span className="p-2 bg-amber-100 rounded-lg">
+                    <Package size={20} className="text-amber-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">1.234</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <AlertTriangle size={16} className="text-amber-500" />
+                  <span className="text-amber-500 font-medium">5 alertas</span>
+                  <span className="text-gray-500 ml-2">de estoque baixo</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Clientes Ativos</span>
+                  <span className="p-2 bg-blue-100 rounded-lg">
+                    <Users size={20} className="text-blue-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">892</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight size={16} className="text-green-500" />
+                  <span className="text-green-500 font-medium">8.1%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gráficos e Tabelas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Receitas vs Despesas</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={salesData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="receitas" fill="#10B981" />
+                      <Bar dataKey="despesas" fill="#EF4444" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Distribuição de Despesas</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={expenseDistribution}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {expenseDistribution.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Últimas Transações e Produtos com Estoque Baixo */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold">Últimas Transações</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                        <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {recentTransactions.map((transaction) => (
+                        <tr key={transaction.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-900">{transaction.description}</td>
+                          <td className="px-6 py-4 text-right text-sm text-gray-900">{transaction.value}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                transaction.status === 'Recebido'
+                                  ? 'bg-green-100 text-green-800'
+                                  : transaction.status === 'Pendente'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {transaction.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{transaction.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold">Produtos com Estoque Baixo</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
+                        <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Atual</th>
+                        <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Mínimo</th>
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {lowStockProducts.map((product) => (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-900">{product.name}</td>
+                          <td className="px-6 py-4 text-right text-sm text-gray-900">{product.current}</td>
+                          <td className="px-6 py-4 text-right text-sm text-gray-900">{product.min}</td>
+                          <td className="px-6 py-4">
+                            <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Estoque Baixo
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </Tabs.Content>
+
+          <Tabs.Content value="activities" className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold">Atividades Recentes</h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="p-6 hover:bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Bell size={20} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900">{activity.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Tabs.Content>
+        </Tabs.Root>
+      </main>
     </div>
   );
 };

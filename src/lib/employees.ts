@@ -4,13 +4,13 @@ export interface Employee {
   id: string;
   name: string;
   email: string | null;
-  document: string | null;
-  position: string | null;
-  department: string | null;
+  document: string;
+  position: string;
+  department: string;
   phone: string | null;
   address: string | null;
   salary: number | null;
-  hire_date: string | null;
+  hire_date: string;
   status: 'Ativo' | 'Inativo' | 'Férias' | 'Licença';
   productivity: number | null;
   notes: string | null;
@@ -22,14 +22,15 @@ export interface Employee {
 export interface CreateEmployeeData {
   name: string;
   email?: string;
-  document?: string;
-  position?: string;
-  department?: string;
+  document: string;
+  position: string;
+  department: string;
   phone?: string;
   address?: string;
   salary?: number;
-  hire_date?: string;
-  status?: 'Ativo' | 'Inativo' | 'Férias' | 'Licença';
+  hire_date: string;
+  status: 'Ativo' | 'Inativo' | 'Férias' | 'Licença';
+  productivity?: number;
   notes?: string;
 }
 
@@ -43,7 +44,12 @@ export async function createEmployee(data: CreateEmployeeData) {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('CPF já cadastrado');
+    }
+    throw error;
+  }
   return employee;
 }
 
@@ -65,7 +71,12 @@ export async function updateEmployee(id: string, data: Partial<CreateEmployeeDat
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('CPF já cadastrado');
+    }
+    throw error;
+  }
   return employee;
 }
 

@@ -1,281 +1,560 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import { ptBR } from 'date-fns/locale';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell
+  PieChart, Pie, Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Download, Plus, FileText, BellRing, CreditCard, Wallet, Ban as Bank, Receipt } from 'lucide-react';
+import {
+  DollarSign, Plus, Filter, Search,
+  TrendingUp, ArrowUpRight, ArrowDownRight,
+  Star, AlertTriangle, X
+} from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import * as Tabs from '@radix-ui/react-tabs';
 
-const monthlyData = [
-  { month: 'Jan', receitas: 50000, despesas: 35000 },
-  { month: 'Fev', receitas: 65000, despesas: 40000 },
-  { month: 'Mar', receitas: 45000, despesas: 38000 },
-  { month: 'Abr', receitas: 70000, despesas: 42000 },
-  { month: 'Mai', receitas: 85000, despesas: 48000 },
-  { month: 'Jun', receitas: 75000, despesas: 45000 },
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+
+const expensesByCategory = [
+  { name: 'Operacional', value: 35 },
+  { name: 'Marketing', value: 25 },
+  { name: 'Pessoal', value: 30 },
+  { name: 'Outros', value: 10 },
 ];
 
-const expenseCategories = [
-  { name: 'Operacional', value: 45 },
-  { name: 'Marketing', value: 15 },
-  { name: 'Pessoal', value: 25 },
-  { name: 'Infraestrutura', value: 10 },
-  { name: 'Outros', value: 5 },
-];
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
-const transactions = [
-  {
-    id: 1,
-    description: 'Venda de Produtos',
-    type: 'receita',
-    value: 2500.00,
-    date: '2024-03-20',
-    status: 'Recebido',
-    category: 'Vendas',
-  },
-  {
-    id: 2,
-    description: 'Aluguel',
-    type: 'despesa',
-    value: 3800.00,
-    date: '2024-03-25',
-    status: 'Pendente',
-    category: 'Infraestrutura',
-  },
-  {
-    id: 3,
-    description: 'Serviços Prestados',
-    type: 'receita',
-    value: 1500.00,
-    date: '2024-03-18',
-    status: 'Recebido',
-    category: 'Serviços',
-  },
+const monthlyRevenue = [
+  { name: 'Jan', revenue: 50000, expenses: 35000 },
+  { name: 'Fev', revenue: 55000, expenses: 37000 },
+  { name: 'Mar', revenue: 58000, expenses: 36000 },
+  { name: 'Abr', revenue: 62000, expenses: 38000 },
+  { name: 'Mai', revenue: 65000, expenses: 40000 },
+  { name: 'Jun', revenue: 68000, expenses: 41000 },
 ];
 
 const Financeiro = () => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  // Form state
+  const [formData, setFormData] = useState({
+    type: '',
+    category: '',
+    amount: '',
+    date: new Date(),
+    description: '',
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.type) {
+      errors.type = 'Tipo é obrigatório';
+    }
+
+    if (!formData.category) {
+      errors.category = 'Categoria é obrigatória';
+    }
+
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      errors.amount = 'Valor deve ser maior que zero';
+    }
+
+    if (!formData.date) {
+      errors.date = 'Data é obrigatória';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when field is modified
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleDateChange = (date: Date | null) => {
+    setFormData(prev => ({
+      ...prev,
+      date: date || new Date()
+    }));
+    if (formErrors.date) {
+      setFormErrors(prev => ({
+        ...prev,
+        date: ''
+      }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      // TODO: Submit transaction
+      console.log('Form submitted:', formData);
+      // Reset form
+      setFormData({
+        type: '',
+        category: '',
+        amount: '',
+        date: new Date(),
+        description: '',
+      });
+      // Close modal (assuming we have access to Dialog.Close ref)
+      const closeButton = document.querySelector('[aria-label="Close"]');
+      if (closeButton instanceof HTMLButtonElement) {
+        closeButton.click();
+      }
+    }
   };
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Gestão Financeira</h1>
-            <p className="text-gray-500 mt-1">Controle completo das suas finanças</p>
+    <div className="min-h-screen bg-gray-50 text-gray-900 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
+      {/* Header Fixo */}
+      <header className="sticky top-0 z-10 backdrop-blur-sm bg-opacity-90">
+        <div className="max-w-[1600px] mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-green-100 rounded-xl">
+                <DollarSign size={24} className="text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Financeiro</h1>
+                <p className="text-sm text-gray-500">Gestão financeira e controle de gastos</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Dialog.Root>
+                <Dialog.Trigger asChild>
+                  <button className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                    <Plus size={20} />
+                    <span className="font-medium">Nova Transação</span>
+                  </button>
+                </Dialog.Trigger>
+                <Dialog.Portal>
+                  <Dialog.Overlay className="fixed inset-0 bg-black/50" />
+                  <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-3xl max-h-[85vh] overflow-y-auto rounded-xl shadow-lg bg-white p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <Dialog.Title className="text-lg font-semibold">Nova Transação</Dialog.Title>
+                      <Dialog.Close className="p-1 rounded-full hover:bg-gray-100">
+                        <X size={20} className="text-gray-500" />
+                      </Dialog.Close>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Tipo
+                            {formErrors.type && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <select
+                            name="type"
+                            value={formData.type}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 rounded-lg bg-white border ${
+                              formErrors.type ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="">Selecione...</option>
+                            <option value="receita">Receita</option>
+                            <option value="despesa">Despesa</option>
+                          </select>
+                          {formErrors.type && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.type}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Categoria
+                            {formErrors.category && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <select
+                            name="category"
+                            value={formData.category}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 rounded-lg bg-white border ${
+                              formErrors.category ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="">Selecione...</option>
+                            <option value="operacional">Operacional</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="pessoal">Pessoal</option>
+                            <option value="outros">Outros</option>
+                          </select>
+                          {formErrors.category && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.category}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Valor
+                            {formErrors.amount && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <input
+                            type="number"
+                            name="amount"
+                            value={formData.amount}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            min="0"
+                            className={`w-full px-3 py-2 rounded-lg bg-white border ${
+                              formErrors.amount ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="0,00"
+                          />
+                          {formErrors.amount && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.amount}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Data
+                            {formErrors.date && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <DatePicker
+                            selected={formData.date}
+                            onChange={handleDateChange}
+                            className={`w-full px-3 py-2 rounded-lg bg-white border ${
+                              formErrors.date ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            dateFormat="dd/MM/yyyy"
+                            locale={ptBR}
+                          />
+                          {formErrors.date && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.date}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Descrição</label>
+                        <textarea
+                          name="description"
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-300"
+                          rows={3}
+                          placeholder="Detalhes da transação"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-4">
+                        <Dialog.Close asChild>
+                          <button
+                            type="button"
+                            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </Dialog.Close>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                        >
+                          Salvar Transação
+                        </button>
+                      </div>
+                    </form>
+                  </Dialog.Content>
+                </Dialog.Portal>
+              </Dialog.Root>
+            </div>
           </div>
-          <div className="flex gap-4">
-            <button
-              onClick={toggleTheme}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+        </div>
+      </header>
+
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
+        {/* Tabs */}
+        <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+          <Tabs.List className="flex gap-1 p-1 mb-6 w-fit bg-gray-100 rounded-lg">
+            <Tabs.Trigger
+              value="overview"
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'overview'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
-              {theme === 'light' ? '🌙' : '☀️'} Modo {theme === 'light' ? 'Escuro' : 'Claro'}
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-              <Plus size={20} /> Nova Transação
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-              <Download size={20} /> Exportar
-            </button>
-          </div>
-        </div>
+              Visão Geral
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="transactions"
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'transactions'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Transações
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="reports"
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'reports'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Relatórios
+            </Tabs.Trigger>
+          </Tabs.List>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Saldo em Caixa</p>
-                <h3 className="text-2xl font-bold">R$ 125.400</h3>
-                <p className="text-sm text-green-500 flex items-center mt-2">
-                  <TrendingUp size={16} className="mr-1" /> +12.5%
-                </p>
+          {/* Conteúdo das Tabs */}
+          <Tabs.Content value="overview" className="space-y-6">
+            {/* Cards de Métricas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Receitas</span>
+                  <span className="p-2 bg-green-100 rounded-lg">
+                    <TrendingUp size={20} className="text-green-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">R$ 68.000</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight size={16} className="text-green-500" />
+                  <span className="text-green-500 font-medium">12%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
               </div>
-              <Wallet size={40} className="text-blue-500" />
-            </div>
-          </div>
 
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Receitas do Mês</p>
-                <h3 className="text-2xl font-bold">R$ 85.300</h3>
-                <p className="text-sm text-green-500 flex items-center mt-2">
-                  <TrendingUp size={16} className="mr-1" /> +8.2%
-                </p>
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Despesas</span>
+                  <span className="p-2 bg-red-100 rounded-lg">
+                    <TrendingUp size={20} className="text-red-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">R$ 41.000</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight size={16} className="text-red-500" />
+                  <span className="text-red-500 font-medium">8%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
               </div>
-              <DollarSign size={40} className="text-blue-500" />
-            </div>
-          </div>
 
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Despesas do Mês</p>
-                <h3 className="text-2xl font-bold">R$ 42.800</h3>
-                <p className="text-sm text-red-500 flex items-center mt-2">
-                  <TrendingDown size={16} className="mr-1" /> -5.3%
-                </p>
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Lucro</span>
+                  <span className="p-2 bg-blue-100 rounded-lg">
+                    <Star size={20} className="text-blue-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">R$ 27.000</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight size={16} className="text-blue-500" />
+                  <span className="text-blue-500 font-medium">15%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
               </div>
-              <Receipt size={40} className="text-blue-500" />
-            </div>
-          </div>
 
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Contas a Receber</p>
-                <h3 className="text-2xl font-bold">R$ 38.900</h3>
-                <p className="text-sm text-yellow-500 flex items-center mt-2">
-                  <Calendar size={16} className="mr-1" /> 8 pendentes
-                </p>
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Contas a Pagar</span>
+                  <span className="p-2 bg-amber-100 rounded-lg">
+                    <AlertTriangle size={20} className="text-amber-600" />
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-bold">R$ 12.500</span>
+                </div>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowDownRight size={16} className="text-amber-500" />
+                  <span className="text-amber-500 font-medium">5%</span>
+                  <span className="text-gray-500 ml-2">vs. mês anterior</span>
+                </div>
               </div>
-              <Bank size={40} className="text-blue-500" />
             </div>
-          </div>
-        </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <h3 className="text-xl font-semibold mb-4">Fluxo de Caixa</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="receitas" fill="#10B981" name="Receitas" />
-                  <Bar dataKey="despesas" fill="#EF4444" name="Despesas" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Receitas vs Despesas</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyRevenue}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="revenue" name="Receitas" fill="#10B981" />
+                      <Bar dataKey="expenses" name="Despesas" fill="#EF4444" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <h3 className="text-xl font-semibold mb-4">Distribuição de Despesas</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expenseCategories}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {expenseCategories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Transactions Table */}
-        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg mb-8`}>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold">Transações Recentes</h3>
-            <div className="flex gap-4">
-              <DatePicker
-                selectsRange={true}
-                startDate={startDate}
-                endDate={endDate}
-                onChange={(update) => setDateRange(update)}
-                placeholderText="Filtrar por período"
-                className="px-4 py-2 rounded-lg border border-gray-300"
-              />
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
-                <Filter size={20} /> Filtros
-              </button>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3">Descrição</th>
-                  <th className="text-left py-3">Categoria</th>
-                  <th className="text-left py-3">Valor</th>
-                  <th className="text-left py-3">Data</th>
-                  <th className="text-left py-3">Status</th>
-                  <th className="text-left py-3">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b">
-                    <td className="py-3">{transaction.description}</td>
-                    <td className="py-3">{transaction.category}</td>
-                    <td className={`py-3 ${transaction.type === 'receita' ? 'text-green-500' : 'text-red-500'}`}>
-                      {transaction.type === 'receita' ? '+' : '-'}R$ {transaction.value.toFixed(2)}
-                    </td>
-                    <td className="py-3">{format(new Date(transaction.date), 'dd/MM/yyyy')}</td>
-                    <td className="py-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          transaction.status === 'Recebido'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Despesas por Categoria</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={expensesByCategory}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
-                        {transaction.status}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <button className="text-blue-600 hover:text-blue-800">
-                        <FileText size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        {expensesByCategory.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </Tabs.Content>
 
-        {/* Alerts and Notifications */}
-        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-          <h3 className="text-xl font-semibold mb-4">Alertas Financeiros</h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 bg-yellow-50 text-yellow-800 rounded-lg">
-              <BellRing size={24} />
-              <div>
-                <p className="font-medium">Contas a vencer esta semana</p>
-                <p className="text-sm">3 pagamentos totalizam R$ 5.800,00</p>
+          <Tabs.Content value="transactions" className="space-y-6">
+            {/* Filtros e Busca */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar transações..."
+                    className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+                >
+                  <Filter size={20} className="text-gray-500" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <DatePicker
+                  selectsRange={true}
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={(update) => setDateRange(update)}
+                  placeholderText="Selecione o período"
+                  className="px-3 py-2 rounded-lg border border-gray-300"
+                  locale={ptBR}
+                />
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-green-50 text-green-800 rounded-lg">
-              <CreditCard size={24} />
-              <div>
-                <p className="font-medium">Recebimentos previstos</p>
-                <p className="text-sm">5 recebimentos totalizam R$ 12.300,00</p>
+
+            {/* Lista de Transações */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                      <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                      <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {[...Array(5)].map((_, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {format(new Date(2024, 2, 12 - index), 'dd/MM/yyyy')}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          Pagamento de Fornecedor
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          Operacional
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Despesa
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-gray-900">
+                          R$ 2.500,00
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </Tabs.Content>
+
+          <Tabs.Content value="reports" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 bg-white rounded-xl shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <DollarSign size={24} className="text-gray-400" />
+                  <h3 className="text-lg font-semibold">DRE</h3>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  Demonstração do Resultado do Exercício com análise detalhada de receitas e despesas.
+                </p>
+                <button className="w-full px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  Gerar Relatório
+                </button>
+              </div>
+
+              <div className="p-6 bg-white rounded-xl shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <TrendingUp size={24} className="text-gray-400" />
+                  <h3 className="text-lg font-semibold">Fluxo de Caixa</h3>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  Análise completa do fluxo de caixa com projeções e tendências.
+                </p>
+                <button className="w-full px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  Gerar Relatório
+                </button>
+              </div>
+
+              <div className="p-6 bg-white rounded-xl shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <AlertTriangle size={24} className="text-gray-400" />
+                  <h3 className="text-lg font-semibold">Contas a Pagar</h3>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  Relatório detalhado de contas a pagar com datas de vencimento.
+                </p>
+                <button className="w-full px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  Gerar Relatório
+                </button>
+              </div>
+            </div>
+          </Tabs.Content>
+        </Tabs.Root>
+      </main>
     </div>
   );
 };

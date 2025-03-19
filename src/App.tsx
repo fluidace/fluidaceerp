@@ -20,6 +20,7 @@ import NotasFiscais from './pages/NotasFiscais';
 import Configuracoes from './pages/Configuracoes';
 import Funcionarios from './pages/Funcionarios';
 import Compras from './pages/Compras';
+import Producao from './pages/Producao';
 
 // Layout Components
 import Sidebar from './components/Sidebar';
@@ -161,6 +162,18 @@ function App() {
                 <LayoutProvider>
                   <AppLayout>
                     <Funcionarios />
+                  </AppLayout>
+                </LayoutProvider>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/producao"
+            element={
+              <PrivateRoute>
+                <LayoutProvider>
+                  <AppLayout>
+                    <Producao />
                   </AppLayout>
                 </LayoutProvider>
               </PrivateRoute>

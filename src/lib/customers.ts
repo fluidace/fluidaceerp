@@ -1,33 +1,41 @@
 import { supabase } from './supabase';
+import { subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export interface Customer {
   id: string;
   name: string;
-  email: string | null;
-  document: string | null;
-  type: 'Física' | 'Jurídica' | null;
-  phone: string | null;
-  address: string | null;
-  status: 'Ativo' | 'Inativo' | 'VIP';
-  notes: string | null;
-  total_purchases: number;
-  last_purchase: string | null;
-  created_at: string;
-  updated_at: string;
+  email: string;
+  document: string;
+  phone: string;
+  type: 'pf' | 'pj';
+  status: 'ativo' | 'inativo' | 'vip';
+  address?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CustomerFilters {
+  status?: string;
+  type?: string;
+  startDate?: Date;
+  endDate?: Date;
+  searchTerm?: string;
 }
 
 export interface CreateCustomerData {
   name: string;
   email?: string;
   document?: string;
-  type?: 'Física' | 'Jurídica';
+  type?: 'pf' | 'pj';
   phone?: string;
   address?: string;
-  status?: 'Ativo' | 'Inativo' | 'VIP';
+  status?: 'ativo' | 'inativo' | 'vip';
   notes?: string;
 }
 
-export async function createCustomer(data: CreateCustomerData) {
+export async function createCustomer(data: CreateCustomerData): Promise<Customer> {
   const { data: customer, error } = await supabase
     .from('customers')
     .insert([{
@@ -41,17 +49,53 @@ export async function createCustomer(data: CreateCustomerData) {
   return customer;
 }
 
-export async function getCustomers() {
-  const { data: customers, error } = await supabase
+export async function getCustomers(filters?: CustomerFilters): Promise<Customer[]> {
+  let query = supabase
     .from('customers')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select('*');
+
+  if (filters) {
+    // Status filter
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    // Type filter
+    if (filters.type) {
+      query = query.eq('type', filters.type);
+    }
+
+    // Start date filter
+    if (filters.startDate) {
+      query = query.gte('created_at', filters.startDate.toISOString());
+    }
+
+    // End date filter
+    if (filters.endDate) {
+      query = query.lte('created_at', filters.endDate.toISOString());
+    }
+
+    // Search term (multiple fields)
+    if (filters.searchTerm) {
+      query = query.or(`
+        name.ilike.%${filters.searchTerm}%,
+        document.ilike.%${filters.searchTerm}%,
+        email.ilike.%${filters.searchTerm}%,
+        phone.ilike.%${filters.searchTerm}%
+      `);
+    }
+  }
+
+  // Always order by most recent first
+  query = query.order('created_at', { ascending: false });
+
+  const { data: customers, error } = await query;
 
   if (error) throw error;
   return customers;
 }
 
-export async function updateCustomer(id: string, data: Partial<CreateCustomerData>) {
+export async function updateCustomer(id: string, data: Partial<CreateCustomerData>): Promise<Customer> {
   const { data: customer, error } = await supabase
     .from('customers')
     .update(data)
@@ -63,7 +107,7 @@ export async function updateCustomer(id: string, data: Partial<CreateCustomerDat
   return customer;
 }
 
-export async function deleteCustomer(id: string) {
+export async function deleteCustomer(id: string): Promise<void> {
   const { error } = await supabase
     .from('customers')
     .delete()

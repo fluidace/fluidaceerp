@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -10,9 +9,9 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  Boxes,
   UserCog,
-  ShoppingBag
+  ShoppingBag,
+  Factory
 } from 'lucide-react';
 import { useLayout } from '../contexts/LayoutContext';
 
@@ -24,6 +23,7 @@ const Sidebar = () => {
     { icon: DollarSign, label: 'Financeiro', path: '/financeiro' },
     { icon: ShoppingCart, label: 'Vendas', path: '/vendas' },
     { icon: ShoppingBag, label: 'Compras', path: '/compras' },
+    { icon: Factory, label: 'Produção', path: '/producao' },
     { icon: Package, label: 'Estoque', path: '/estoque' },
     { icon: Users, label: 'Clientes', path: '/clientes' },
     { icon: UserCog, label: 'Funcionários', path: '/funcionarios' },
